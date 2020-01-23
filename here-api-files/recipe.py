@@ -92,6 +92,7 @@ with output_dataset.get_writer() as writer:
         b = b +1
         n_b = b * P_BATCH_SIZE_UNIT 
 
+
         df = df[abs(df[P_SEARCH_ADDRESS]>0)]
 
         if strategy =='make_unique':
@@ -99,52 +100,57 @@ with output_dataset.get_writer() as writer:
         else:
             dfu = df.copy()
 
+
         n__ = -1
         for v in dfu.to_dict('records'):
 
             n__ = n__ + 1
             n_record = n_b + n__
 
-            address = v[P_SEARCH_ADDRESS]
+            searchtext = v[P_SEARCH_ADDRESS]
             
             if use_column_id:
                 id_ = v[id_column]
+
+            
+            print '%s - processing: (%s)' % (n_record, searchtext)
             
             # Encode parameters
             params = urllib.urlencode(
-                {'searchtext': P_SEARCH_ADDRESS,
-                 'api_key': P_API_KEY,
+                {'searchtext': searchtext,
+                 'apiKey': P_API_KEY,
                  }
             )
             # Contruct request URL
             url = 'https://geocoder.ls.hereapi.com/6.2/geocode.json?' + params            
-            # print(url)
+            print(url)
             for P_CALL_COUNT in range(0, 4):
                 call = requests.get(url, verify=False)
                 if call.status_code == 200:
                     geoData = call.json()
                     try:
                         flat_data = flatten_json(geoData)
-                        
+                        # print(flat_data)
                         d = {}
 
-                        d['matchAddress'] = flat_data[u'matchAddress']
-                        d['storeStreeNumber'] = flat_data[u'storeStreeNumber']
-                        d['storeStreet'] = flat_data[u'storeStreet']
-                        d['storeCity'] = flat_data[u'storeCity']
-                        d['storeState'] = flat_data[u'storeState']
-                        d['storeCounty'] = flat_data[u'storeCounty']
-                        d['storeCountry'] = flat_data[u'storeCountry']
-                        d['storePostalCode'] = flat_data[u'storePostalCode']
-                        d['storeLatitude'] = flat_data[u'storeLatitude']
-                        d['storeLongitude'] = flat_data[u'storeLongitude']
-                        d['storeMatchLevel'] = flat_data[u'storeMatchLevel']
-                        d['storeMatchQualityCity'] = flat_data[u'storeMatchQualityCity']
-                        d['storeMatchQualityHouseNumber'] = flat_data[u'storeMatchQualityHouseNumber']
-                        d['storeMatchQualityPostalCode'] = flat_data[u'storeMatchQualityPostalCode']
-                        d['storeMatchQualityState'] = flat_data[u'storeMatchQualityState']
-                        d['storeMatchQualityStreet'] = flat_data[u'storeMatchQualityStreet']
-
+                        d['matchAddress'] = flat_data['Response_View_0_Result_0_Location_Address_Label']
+                        d['storeStreeNumber'] = flat_data['Response_View_0_Result_0_Location_Address_HouseNumber']
+                        d['storeStreet'] = flat_data['Response_View_0_Result_0_Location_Address_Street']
+                        d['storeCity'] = flat_data['Response_View_0_Result_0_Location_Address_City']
+                        d['storeState'] = flat_data['Response_View_0_Result_0_Location_Address_State']
+                        d['storeCounty'] = flat_data['Response_View_0_Result_0_Location_Address_County']
+                        d['storeCountry'] = flat_data['Response_View_0_Result_0_Location_Address_Country']
+                        d['storePostalCode'] = flat_data['Response_View_0_Result_0_Location_Address_PostalCode']
+                        d['storeLatitude'] = flat_data['Response_View_0_Result_0_Location_NavigationPosition_0_Latitude']
+                        d['storeLongitude'] = flat_data['Response_View_0_Result_0_Location_NavigationPosition_0_Longitude']
+                        d['storeMatchLevel'] = flat_data[u'Response_View_0_Result_0_MatchLevel']
+                        d['storeMatchQualityCity'] = flat_data['Response_View_0_Result_0_MatchQuality_City']
+                        d['storeMatchQualityHouseNumber'] = flat_data['Response_View_0_Result_0_MatchQuality_HouseNumber']
+                        d['storeMatchQualityPostalCode'] = flat_data['Response_View_0_Result_0_MatchQuality_PostalCode']
+                        d['storeMatchQualityState'] = flat_data['Response_View_0_Result_0_MatchQuality_State']
+                        d['storeMatchQualityStreet'] = flat_data['Response_View_0_Result_0_MatchQuality_Street_0']
+                        
+                        # print(d)
 
                         col_list_ = ['matchAddress',
                                      'storeStreeNumber',
@@ -174,9 +180,10 @@ with output_dataset.get_writer() as writer:
                         writer.write_row_dict(d)
                         break
                     except:
-                        print 'Unable to find these coordinates in the US Census API: Record #:%s, url:%s' % (
+                        print 'Unable to find these coordinates in the Here API after 4 tries: Record #:%s, url:%s' % (
                             n_record, url)
                 else:
+                    print 'Failed. API status: %s, retrying in P_CALL_COUNT*0.500 seconds.' % (call.status_code)
                     time.sleep(P_CALL_COUNT*0.500)
             # call = requests.get(url, verify=False)
             time.sleep(P_PAUSE)
