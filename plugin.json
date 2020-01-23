@@ -1,0 +1,13 @@
+{
+	"id" : "here-api",
+	"version" : "0.0.1",
+	"meta" : {
+		"label" : "Here.com Geocoder API",
+		"description" : "Simple and consistent geocoding library written in Python using HERE API",
+		"author" : "Subodh Gupta",
+		"icon" : "icon-location-arrow",
+		"licenseInfo" : "Apache Software License",
+		"url": "https://www.linkedin.com/in/subodhgupta/",
+		"tags": ["Enrichment", "Open Data"]
+	}
+}
